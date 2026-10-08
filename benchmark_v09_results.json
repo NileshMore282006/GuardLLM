@@ -1,0 +1,371 @@
+{
+  "version": "0.8.0",
+  "milestone": "v0.9",
+  "timestamp": 1791287157.5027516,
+  "status": "PASS",
+  "metrics": {
+    "total_cases": 29,
+    "blocked_rejected_cases": 26,
+    "successful_attacks": 0,
+    "false_positives": 0,
+    "secret_leaks": 0,
+    "unauthorized_privileged_actions": 0,
+    "cross_tenant_violations": 0,
+    "audit_integrity_failures": 0,
+    "readiness_failures_detected": 0
+  },
+  "latencies": {
+    "config_validation_ms": {
+      "mean": 0.052,
+      "median": 0.041,
+      "p95": 0.136,
+      "max": 0.199
+    },
+    "rate_limiter_check_ms": {
+      "mean": 0.005,
+      "median": 0.003,
+      "p95": 0.01,
+      "max": 0.018
+    },
+    "database_access_and_check_ms": {
+      "mean": 6.992,
+      "median": 6.957,
+      "p95": 9.194,
+      "max": 9.546
+    },
+    "audit_write_ms": {
+      "mean": 16.028,
+      "median": 15.956,
+      "p95": 17.826,
+      "max": 18.362
+    },
+    "audit_verification_ms": {
+      "mean": 146.544,
+      "median": 148.146,
+      "p95": 156.657,
+      "max": 156.657
+    },
+    "readiness_probe_ms": {
+      "mean": 2056.071,
+      "median": 2056.094,
+      "p95": 2064.315,
+      "max": 2064.315
+    },
+    "guard_request_ms": {
+      "mean": 702.631,
+      "median": 670.304,
+      "p95": 996.113,
+      "max": 996.113
+    }
+  },
+  "categories": {
+    "A_config": {
+      "total": 5,
+      "passed": 5,
+      "failed": 0,
+      "cases": [
+        {
+          "name": "prod_auth_disabled_rejected",
+          "expected_block": true,
+          "actual_block": true,
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "prod_legacy_identity_rejected",
+          "expected_block": true,
+          "actual_block": true,
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "prod_wildcard_cors_rejected",
+          "expected_block": true,
+          "actual_block": true,
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "prod_missing_audit_key_rejected",
+          "expected_block": true,
+          "actual_block": true,
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "key_separation_violation_rejected",
+          "expected_block": true,
+          "actual_block": true,
+          "passed": true,
+          "detail": ""
+        }
+      ]
+    },
+    "B_secret_leakage": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "cases": [
+        {
+          "name": "credential_secret_not_leaked_via_api",
+          "expected_block": true,
+          "actual_block": true,
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "canary_secret_not_leaked_in_guard",
+          "expected_block": true,
+          "actual_block": true,
+          "passed": true,
+          "detail": ""
+        }
+      ]
+    },
+    "C_audit_tampering": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "cases": [
+        {
+          "name": "unmodified_audit_chain_valid",
+          "expected_block": false,
+          "actual_block": false,
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "tampered_decision_detected",
+          "expected_block": true,
+          "actual_block": true,
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "missing_integrity_key_detected",
+          "expected_block": true,
+          "actual_block": true,
+          "passed": true,
+          "detail": ""
+        }
+      ]
+    },
+    "D_sql_path_abuse": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "cases": [
+        {
+          "name": "db_path_traversal_rejected",
+          "expected_block": true,
+          "actual_block": true,
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "sql_injection_in_path_rejected",
+          "expected_block": true,
+          "actual_block": true,
+          "passed": true,
+          "detail": ""
+        }
+      ]
+    },
+    "E_http_proxy": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "cases": [
+        {
+          "name": "oversized_payload_rejected_413",
+          "expected_block": true,
+          "actual_block": true,
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "unsupported_media_type_rejected_415",
+          "expected_block": true,
+          "actual_block": true,
+          "passed": true,
+          "detail": ""
+        }
+      ]
+    },
+    "F_rate_limiting": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "cases": [
+        {
+          "name": "auth_failure_rate_limit_enforced",
+          "expected_block": true,
+          "actual_block": true,
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "tenant_rate_limit_enforced",
+          "expected_block": true,
+          "actual_block": true,
+          "passed": true,
+          "detail": ""
+        }
+      ]
+    },
+    "G_resource_exhaustion": {
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "cases": [
+        {
+          "name": "oversized_prompt_rejected",
+          "expected_block": true,
+          "actual_block": true,
+          "passed": true,
+          "detail": ""
+        }
+      ]
+    },
+    "H_logging": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "cases": [
+        {
+          "name": "bearer_token_redacted_from_log_text",
+          "expected_block": true,
+          "actual_block": true,
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "canary_redacted_from_log_text",
+          "expected_block": true,
+          "actual_block": true,
+          "passed": true,
+          "detail": ""
+        }
+      ]
+    },
+    "I_cross_tenant": {
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "cases": [
+        {
+          "name": "unauthorized_cross_tenant_audit_rejected",
+          "expected_block": true,
+          "actual_block": true,
+          "passed": true,
+          "detail": ""
+        }
+      ]
+    },
+    "J_authentication": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "cases": [
+        {
+          "name": "missing_auth_header_rejected",
+          "expected_block": true,
+          "actual_block": true,
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "invalid_token_format_rejected",
+          "expected_block": true,
+          "actual_block": true,
+          "passed": true,
+          "detail": ""
+        }
+      ]
+    },
+    "K_authorization": {
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "cases": [
+        {
+          "name": "unauthorized_principal_creation_forbidden",
+          "expected_block": true,
+          "actual_block": true,
+          "passed": true,
+          "detail": ""
+        }
+      ]
+    },
+    "L_approvals": {
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "cases": [
+        {
+          "name": "regular_user_cannot_approve_action",
+          "expected_block": true,
+          "actual_block": true,
+          "passed": true,
+          "detail": ""
+        }
+      ]
+    },
+    "M_tool_security": {
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "cases": [
+        {
+          "name": "critical_tool_blocked_by_policy",
+          "expected_block": true,
+          "actual_block": true,
+          "passed": true,
+          "detail": ""
+        }
+      ]
+    },
+    "N_prompt_injection": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "cases": [
+        {
+          "name": "v5_injection_blocked_1",
+          "expected_block": true,
+          "actual_block": true,
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "v5_injection_blocked_2",
+          "expected_block": true,
+          "actual_block": true,
+          "passed": true,
+          "detail": ""
+        }
+      ]
+    },
+    "O_benign": {
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "cases": [
+        {
+          "name": "benign_prompt_allowed_1",
+          "expected_block": false,
+          "actual_block": false,
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "benign_prompt_allowed_2",
+          "expected_block": false,
+          "actual_block": false,
+          "passed": true,
+          "detail": ""
+        }
+      ]
+    }
+  }
+}

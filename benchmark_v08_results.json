@@ -1,0 +1,99 @@
+{
+  "version": "0.8.0",
+  "timestamp": 1791265261.5933988,
+  "status": "PASS",
+  "categories": {
+    "A_credential_attacks": {
+      "passed": 9,
+      "total": 9,
+      "block_rate": 100.0
+    },
+    "B_identity_attacks": {
+      "passed": 6,
+      "total": 6,
+      "block_rate": 100.0
+    },
+    "C_cross_tenant_attacks": {
+      "passed": 10,
+      "total": 10,
+      "block_rate": 100.0
+    },
+    "D_credential_lifecycle": {
+      "passed": 5,
+      "total": 5,
+      "block_rate": 100.0
+    },
+    "E_authorization_attacks": {
+      "passed": 7,
+      "total": 7,
+      "block_rate": 100.0
+    },
+    "F_regression_attacks": {
+      "passed": 6,
+      "total": 6,
+      "block_rate": 100.0
+    },
+    "G_benign_controls": {
+      "passed": 7,
+      "total": 7,
+      "false_positives": 0,
+      "fpr": 0.0
+    }
+  },
+  "metrics": {
+    "credential_attack_block_rate": 100.0,
+    "identity_spoofing_block_rate": 100.0,
+    "cross_tenant_violation_rate": 0.0,
+    "credential_lifecycle_violation_rate": 0.0,
+    "unauthorized_privileged_actions": 0,
+    "secret_leaks": 0,
+    "audit_chain_verification_failures": 0,
+    "false_positive_rate": 0.0,
+    "guard_regression_count": 0
+  },
+  "latencies": {
+    "credential_lookup_ms": {
+      "mean": 1.118,
+      "median": 1.044,
+      "p95": 1.661,
+      "max": 3.26
+    },
+    "credential_verification_ms": {
+      "mean": 88.116,
+      "median": 87.583,
+      "p95": 92.717,
+      "max": 94.608
+    },
+    "auth_context_creation_ms": {
+      "mean": 95.644,
+      "median": 94.33,
+      "p95": 99.641,
+      "max": 127.665
+    },
+    "tenant_resolution_ms": {
+      "mean": 1.023,
+      "median": 0.951,
+      "p95": 1.399,
+      "max": 2.488
+    },
+    "authorization_check_ms": {
+      "mean": 0.003,
+      "median": 0.003,
+      "p95": 0.005,
+      "max": 0.02
+    },
+    "audit_event_recording_ms": {
+      "mean": 10.811,
+      "median": 10.6,
+      "p95": 11.653,
+      "max": 26.419
+    },
+    "end_to_end_guard_with_auth_ms": {
+      "mean": 830.22,
+      "median": 685.281,
+      "p95": 1554.425,
+      "max": 1587.922
+    }
+  },
+  "invariants": {}
+}

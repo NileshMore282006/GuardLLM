@@ -1,0 +1,73 @@
+{
+  "benchmark": "AgentGuard Backend v0.4 Operational Performance Benchmark",
+  "description": "Controlled local latency and timeout measurements for operational hardening",
+  "guard_model": "llama3.2:latest",
+  "target_model": "llama3.2:latest",
+  "timestamp": "2026-10-04T14:08:47Z",
+  "categories": {
+    "guard_only_allow": {
+      "count": 5,
+      "mean_ms": 987.09,
+      "median_ms": 523.63,
+      "p95_ms": 2385.86,
+      "min_ms": 511.78,
+      "max_ms": 2848.58
+    },
+    "guard_only_block": {
+      "count": 5,
+      "mean_ms": 588.69,
+      "median_ms": 590.76,
+      "p95_ms": 613.9,
+      "min_ms": 539.68,
+      "max_ms": 615.72
+    },
+    "execute_allow": {
+      "count": 3,
+      "mean_ms": 670.15,
+      "median_ms": 680.23,
+      "p95_ms": 683.36,
+      "min_ms": 646.52,
+      "max_ms": 683.7
+    },
+    "execute_block": {
+      "count": 5,
+      "mean_ms": 553.79,
+      "median_ms": 540.78,
+      "p95_ms": 599.51,
+      "min_ms": 531.99,
+      "max_ms": 612.75
+    },
+    "chat_allow": {
+      "count": 3,
+      "mean_ms": 673.02,
+      "median_ms": 670.42,
+      "p95_ms": 684.42,
+      "min_ms": 662.67,
+      "max_ms": 685.98
+    },
+    "chat_block": {
+      "count": 5,
+      "mean_ms": 8.4,
+      "median_ms": 8.35,
+      "p95_ms": 9.09,
+      "min_ms": 7.39,
+      "max_ms": 9.11
+    },
+    "guard_timeout_behavior": {
+      "count": 5,
+      "mean_ms": 8.13,
+      "median_ms": 7.93,
+      "p95_ms": 8.86,
+      "min_ms": 7.71,
+      "max_ms": 9.04
+    },
+    "target_timeout_behavior": {
+      "count": 5,
+      "mean_ms": 540.03,
+      "median_ms": 536.67,
+      "p95_ms": 560.65,
+      "min_ms": 528.14,
+      "max_ms": 565.59
+    }
+  }
+}

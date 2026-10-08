@@ -1,0 +1,76 @@
+{
+  "version": "0.7.0",
+  "timestamp": 1791220596.9935668,
+  "status": "PASS",
+  "categories": {
+    "A_identity": {
+      "passed": 8,
+      "total": 8,
+      "rate": 100.0
+    },
+    "B_policy": {
+      "passed": 8,
+      "total": 8,
+      "rate": 100.0
+    },
+    "C_approval": {
+      "passed": 7,
+      "total": 7,
+      "rate": 100.0
+    },
+    "D_audit": {
+      "passed": 7,
+      "total": 7,
+      "rate": 100.0
+    },
+    "E_regression": {
+      "passed": 7,
+      "total": 7,
+      "rate": 100.0
+    },
+    "benign": {
+      "passed": 6,
+      "total": 6,
+      "fpr": 0.0
+    }
+  },
+  "metrics": {
+    "unauthorized_privileged_actions": 0,
+    "unauthorized_policy_mutations": 0,
+    "unauthorized_tool_executions": 0,
+    "approval_replay_successes": 0,
+    "approval_transfers": 0,
+    "secret_leaks": 0,
+    "audit_chain_verification_failures": 0,
+    "false_positive_rate": 0.0,
+    "guard_regression_count": 0
+  },
+  "latencies": {
+    "identity_resolution_ms": {
+      "p50": 0.002,
+      "p95": 0.002,
+      "mean": 0.002
+    },
+    "policy_evaluation_ms": {
+      "p50": 0.002,
+      "p95": 0.003,
+      "mean": 0.002
+    },
+    "audit_write_ms": {
+      "p50": 10.826,
+      "p95": 13.086,
+      "mean": 10.942
+    },
+    "audit_read_ms": {
+      "p50": 1.614,
+      "p95": 2.557,
+      "mean": 1.613
+    },
+    "end_to_end_guard_ms": {
+      "p50": 713.751,
+      "p95": 1686.674,
+      "mean": 974.899
+    }
+  },
+  "invariants": {}
+}
