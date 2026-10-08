@@ -1321,4 +1321,5 @@ A reusable high-assurance confirmation modal for high-impact mutations (credenti
 - **Known Limitation**: Browser JavaScript memory is not an impenetrable cryptographic boundary against compromised extensions or Cross-Site Scripting (XSS). Production environments must deploy AgentGuard behind a hardened reverse proxy (Caddy/Nginx) enforcing Content-Security-Policy (CSP), HTTP Strict Transport Security (HSTS), and HTTP-only cookie session handling.
 
 #   G u a r d L L M  
+ #   G u a r d L L M  
  
