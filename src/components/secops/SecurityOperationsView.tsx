@@ -15,7 +15,7 @@ import {
   IncidentInvestigation,
   SecOpsConfirmationState,
 } from '../../types/agentguard';
-import { agentGuardApi } from '../../api/agentguard';
+import { agentGuardApi, API_BASE_URL } from '../../api/agentguard';
 import { SecurityPostureCard } from './SecurityPostureCard';
 import { SecurityAlertsPanel } from './SecurityAlertsPanel';
 import { OperationalQueue } from './OperationalQueue';
@@ -97,6 +97,7 @@ export const SecurityOperationsView: React.FC<SecurityOperationsViewProps> = ({
   const [lastRefreshedAt, setLastRefreshedAt] = useState<Date>(new Date());
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false);
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
+  const [sseConnected, setSseConnected] = useState(false);
 
   // Fetch Posture (Ready, Metrics, Integrity)
   const fetchPosture = useCallback(async () => {
@@ -292,6 +293,83 @@ export const SecurityOperationsView: React.FC<SecurityOperationsViewProps> = ({
     deriveAlerts();
   }, [deriveAlerts]);
 
+  // Real-time SSE Stream Connection
+  useEffect(() => {
+    const sseUrl = `${API_BASE_URL}/api/v1/secops/events/stream`;
+    let eventSource: EventSource | null = null;
+    let reconnectTimeout: any = null;
+
+    const connectSSE = () => {
+      try {
+        eventSource = new EventSource(sseUrl);
+
+        eventSource.onopen = () => {
+          setSseConnected(true);
+        };
+
+        eventSource.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (!data) return;
+
+            // Prepend new live event to audit event stream
+            if (data.event_id) {
+              setAuditEvents((prev) => {
+                if (prev.some((e) => e.event_id === data.event_id)) return prev;
+                const formatted: AuditEventItem = {
+                  event_id: data.event_id,
+                  timestamp: data.timestamp || Date.now() / 1000,
+                  action: data.action || 'system_event',
+                  decision: data.decision || 'INFO',
+                  request_id: data.request_id,
+                  principal_id: data.principal_id || 'system',
+                  resource_type: data.resource_type,
+                  resource_id: data.resource_id,
+                  risk_score: data.risk_score || 0,
+                  attack_type: data.attack_type,
+                  tool_name: data.tool_name,
+                  approval_id: data.approval_id,
+                  error_code: data.error_code,
+                  event_hash: data.event_hash || 'stream_verified',
+                  previous_event_hash: data.previous_event_hash || 'chain_linked',
+                };
+                return [formatted, ...prev.slice(0, 49)];
+              });
+              setAuditTotal((prev) => prev + 1);
+            }
+
+            setLastRefreshedAt(new Date());
+
+            // If an approval or policy event is received, immediately refresh approvals
+            if (data.action?.includes('approval') || data.approval_id || data.decision === 'REQUIRE_APPROVAL') {
+              fetchApprovals();
+            }
+          } catch {
+            // Ignore parse errors on keepalive comments
+          }
+        };
+
+        eventSource.onerror = () => {
+          setSseConnected(false);
+          if (eventSource) {
+            eventSource.close();
+            eventSource = null;
+          }
+          reconnectTimeout = setTimeout(connectSSE, 5000);
+        };
+      } catch {
+        setSseConnected(false);
+      }
+    };
+
+    connectSSE();
+
+    return () => {
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      if (eventSource) eventSource.close();
+    };
+  }, [fetchApprovals]);
+
   useEffect(() => {
     if (!autoRefreshEnabled) return;
     const interval = setInterval(() => {
@@ -425,6 +503,35 @@ export const SecurityOperationsView: React.FC<SecurityOperationsViewProps> = ({
 
         {/* Sync Controls */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          {/* Live SSE Status Pill */}
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              fontSize: '0.75rem',
+              padding: '0.25rem 0.6rem',
+              borderRadius: '6px',
+              background: sseConnected ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+              color: sseConnected ? 'var(--color-allow)' : 'var(--color-block)',
+              border: `1px solid ${sseConnected ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+            }}
+          >
+            <span
+              style={{
+                width: '7px',
+                height: '7px',
+                borderRadius: '50%',
+                backgroundColor: sseConnected ? '#10b981' : '#ef4444',
+                boxShadow: sseConnected ? '0 0 8px #10b981' : 'none',
+                display: 'inline-block',
+              }}
+            />
+            <span style={{ fontWeight: 600 }}>
+              {sseConnected ? 'Live SSE Stream Active' : 'Connecting SSE...'}
+            </span>
+          </div>
+
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
             <Clock size={13} />
             <span>Updated: {lastRefreshedAt.toLocaleTimeString()}</span>

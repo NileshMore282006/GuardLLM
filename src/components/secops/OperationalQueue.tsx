@@ -35,6 +35,21 @@ export const OperationalQueue: React.FC<OperationalQueueProps> = ({
   const [errorNotice, setErrorNotice] = useState<string | null>(null);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
   const [executingId, setExecutingId] = useState<string | null>(null);
+  const [isSimulating, setIsSimulating] = useState(false);
+
+  const handleSimulate = async () => {
+    setIsSimulating(true);
+    setErrorNotice(null);
+    try {
+      const res = await agentGuardApi.simulateApproval('send_wire_transfer', 'critical', developerToken);
+      setSuccessNotice(`Simulated High-Risk action generated: ${res.approval_id} (${res.tool_name}). Added to Human Queue!`);
+      onRefreshApprovals();
+    } catch (err: any) {
+      setErrorNotice(err?.message || 'Failed to simulate approval request.');
+    } finally {
+      setIsSimulating(false);
+    }
+  };
 
   const safeApprovals = Array.isArray(approvals) ? approvals : [];
 
@@ -188,6 +203,30 @@ export const OperationalQueue: React.FC<OperationalQueueProps> = ({
           >
             <RotateCw size={12} className={isLoading ? 'spin' : ''} />
             <span>Refresh</span>
+          </button>
+
+          <button
+            type="button"
+            className="primary-btn"
+            onClick={handleSimulate}
+            disabled={isSimulating}
+            title="Simulate high-risk tool action for 1-click HITL approval testing"
+            style={{
+              padding: '0.25rem 0.65rem',
+              fontSize: '0.6875rem',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '5px',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            <ShieldAlert size={12} className={isSimulating ? 'spin' : ''} />
+            <span>{isSimulating ? 'Simulating...' : '+ Simulate High-Risk Action'}</span>
           </button>
         </div>
       </div>

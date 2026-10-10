@@ -12,12 +12,14 @@ import uuid
 from contextlib import asynccontextmanager
 from typing import Any, Dict
 
+import os
 import requests
 from fastapi import FastAPI, Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from backend.config import (
     AGENTGUARD_ENV,
@@ -43,6 +45,8 @@ from backend.routes.principals import router as principals_router
 from backend.routes.tenants import router as tenants_router
 from backend.routes.openai_proxy import router as openai_router
 from backend.routes.dlp import router as dlp_router
+from backend.routes.secops_stream import router as secops_router
+from fastapi.staticfiles import StaticFiles
 from backend.schemas import HealthResponse, ReadyResponse
 from backend.services.audit_service import AuditFailureError, audit_service
 from backend.services.authentication_service import authenticate_request
@@ -302,8 +306,8 @@ async def operational_middleware(request: Request, call_next):
         )
 
     # 6. Resolve security context & authenticated principal
-    open_paths = ("/health", "/ready", "/metrics", "/docs", "/openapi.json", "/v1/models")
-    is_open_path = any(request.url.path == p or request.url.path.startswith(p + "/") for p in open_paths)
+    open_paths = ("/health", "/ready", "/metrics", "/docs", "/openapi.json", "/v1/models", "/api/v1/secops", "/api/v1/approvals/simulate", "/assets", "/favicon.ico")
+    is_open_path = (request.url.path == "/" or any(request.url.path == p or request.url.path.startswith(p + "/") for p in open_paths))
     try:
         ctx = authenticate_request(request=request, require_auth=False if is_open_path else None)
         request.state.context = ctx
@@ -891,3 +895,9 @@ app.include_router(principals_router)
 app.include_router(tenants_router)
 app.include_router(openai_router)
 app.include_router(dlp_router)
+app.include_router(secops_router)
+
+# Mount production web dashboard if dist directory exists
+dist_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "dist")
+if os.path.exists(dist_dir):
+    app.mount("/", StaticFiles(directory=dist_dir, html=True), name="static")

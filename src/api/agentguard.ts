@@ -817,5 +817,42 @@ export const agentGuardApi = {
       signal,
     });
   },
+
+  // -------------------------------------------------------------------------
+  // Live SOC Dashboard Telemetry & Simulation
+  // -------------------------------------------------------------------------
+  async getSecOpsOverview(
+    token?: string,
+    signal?: AbortSignal
+  ): Promise<any> {
+    const headers: Record<string, string> = {};
+    if (token && token.trim()) {
+      headers['Authorization'] = `Bearer ${token.trim()}`;
+    }
+    return requestJson<any>('/api/v1/secops/overview', {
+      method: 'GET',
+      headers,
+      signal,
+    });
+  },
+
+  async simulateApproval(
+    toolName?: string,
+    riskLevel?: string,
+    token?: string
+  ): Promise<any> {
+    const headers: Record<string, string> = {};
+    if (token && token.trim()) {
+      headers['Authorization'] = `Bearer ${token.trim()}`;
+    }
+    return requestJson<any>('/api/v1/approvals/simulate', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        tool_name: toolName || 'send_email',
+        risk_level: riskLevel || 'high',
+      }),
+    });
+  },
 };
 

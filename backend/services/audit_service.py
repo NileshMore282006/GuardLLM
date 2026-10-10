@@ -353,7 +353,7 @@ class AuditService:
                 finally:
                     conn.close()
 
-                return AuditEvent(
+                audit_evt = AuditEvent(
                     event_id=event_id,
                     timestamp=now,
                     request_id=sanitized_req_id,
@@ -375,6 +375,26 @@ class AuditService:
                     tenant_id=sanitized_tenant_id,
                     hash_algorithm=algorithm,
                 )
+
+                # Broadcast live event to connected SOC Dashboard subscribers
+                try:
+                    from backend.services.event_stream_service import event_broadcaster
+                    event_broadcaster.broadcast({
+                        "event_id": event_id,
+                        "timestamp": now,
+                        "request_id": sanitized_req_id,
+                        "action": sanitized_action,
+                        "decision": sanitized_decision,
+                        "attack_type": sanitized_attack,
+                        "risk_score": risk_score,
+                        "tool_name": sanitized_tool,
+                        "approval_id": sanitized_appr_id,
+                        "tenant_id": sanitized_tenant_id,
+                    })
+                except Exception:
+                    pass
+
+                return audit_evt
 
             except Exception as exc:
                 logger.error("Failed to write audit event: %s", type(exc).__name__)
