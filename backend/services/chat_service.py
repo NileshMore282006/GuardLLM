@@ -25,7 +25,7 @@ import requests
 import agentguard
 from backend.config import GUARD_MODEL, TARGET_MODEL, DLP_ENABLED, DLP_REVERSIBLE
 from backend.services.dlp_service import dlp_service, DLPVault
-from backend.schemas import ChatRequest, ChatResponse
+from backend.schemas import ChatMessage, ChatRequest, ChatResponse
 from backend.services.concurrency_service import ConcurrencyLimitExceeded
 from backend.services.metrics_service import metrics
 from backend.services import context_guard_service, target_service
@@ -36,11 +36,11 @@ logger = logging.getLogger("agentguard.chat_service")
 def execute_chat(request: ChatRequest, request_id: Optional[str] = None) -> ChatResponse:
     """
     Executes a multi-turn conversation sequence through the guarded pipeline:
-    1. Evaluates conversation context with context-aware Guard under concurrency control
-    2. Enforces decision (BLOCK/ERROR -> halt execution immediately)
-    3. Invokes target LLM on ALLOW with supported messages under concurrency control
-    4. Sanitizes target output with output leak sanitizer
-    Measures separate Context Guard and Target latencies.
+    1. Ingress DLP privacy masking (protects PII before guard evaluation)
+    2. Evaluates conversation context with context-aware Guard under concurrency control
+    3. Enforces decision (BLOCK/ERROR -> halt execution immediately)
+    4. Invokes target LLM on ALLOW with supported messages under concurrency control
+    5. Sanitizes target output with output leak sanitizer and restores reversible tokens
     """
     start_time = time.perf_counter()
     if not request_id or not request_id.strip():
@@ -52,9 +52,19 @@ def execute_chat(request: ChatRequest, request_id: Optional[str] = None) -> Chat
     )
 
     try:
+        # Step 0: Ingress DLP Tokenization & Privacy Masking
+        dlp_vault = DLPVault()
+        masked_messages = []
+        for msg in request.messages:
+            if DLP_ENABLED:
+                masked_content, dlp_vault = dlp_service.tokenize(msg.content, vault=dlp_vault)
+                masked_messages.append(ChatMessage(role=msg.role, content=masked_content))
+            else:
+                masked_messages.append(msg)
+
         # Step 1: Context-aware security evaluation
         context_start = time.perf_counter()
-        guard_result = context_guard_service.evaluate_chat_context(request.messages)
+        guard_result = context_guard_service.evaluate_chat_context(masked_messages)
         context_latency_ms = round((time.perf_counter() - context_start) * 1000.0, 2)
 
         # Step 2: Handle BLOCK or Guard failure -> DO NOT CALL TARGET LLM
@@ -84,14 +94,7 @@ def execute_chat(request: ChatRequest, request_id: Optional[str] = None) -> Chat
             )
 
         # Step 3: Guard ALLOW -> Invoke Target LLM with DLP Tokenization
-        dlp_vault = DLPVault()
-        target_payload = []
-        for msg in request.messages:
-            if DLP_ENABLED:
-                masked_msg, dlp_vault = dlp_service.tokenize(msg.content, vault=dlp_vault)
-            else:
-                masked_msg = msg.content
-            target_payload.append({"role": msg.role, "content": masked_msg})
+        target_payload = [{"role": msg.role, "content": msg.content} for msg in masked_messages]
 
         target_start = time.perf_counter()
         try:
