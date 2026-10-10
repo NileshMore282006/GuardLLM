@@ -41,6 +41,7 @@ from backend.routes.audit import router as audit_router
 from backend.routes.credentials import router as credentials_router
 from backend.routes.principals import router as principals_router
 from backend.routes.tenants import router as tenants_router
+from backend.routes.openai_proxy import router as openai_router
 from backend.schemas import HealthResponse, ReadyResponse
 from backend.services.audit_service import AuditFailureError, audit_service
 from backend.services.authentication_service import authenticate_request
@@ -259,7 +260,7 @@ async def operational_middleware(request: Request, call_next):
         request._body = cached_body
 
     # 3. Content-Type validation on mutating API requests
-    if request.method in ("POST", "PUT", "PATCH") and request.url.path.startswith("/api/"):
+    if request.method in ("POST", "PUT", "PATCH") and (request.url.path.startswith("/api/") or request.url.path.startswith("/v1/")):
         if len(cached_body) > 0:
             content_type = request.headers.get("content-type", "").split(";")[0].strip().lower()
             if content_type != "application/json":
@@ -300,7 +301,7 @@ async def operational_middleware(request: Request, call_next):
         )
 
     # 6. Resolve security context & authenticated principal
-    open_paths = ("/health", "/ready", "/metrics", "/docs", "/openapi.json")
+    open_paths = ("/health", "/ready", "/metrics", "/docs", "/openapi.json", "/v1/models")
     is_open_path = any(request.url.path == p or request.url.path.startswith(p + "/") for p in open_paths)
     try:
         ctx = authenticate_request(request=request, require_auth=False if is_open_path else None)
@@ -887,3 +888,4 @@ app.include_router(audit_router)
 app.include_router(credentials_router)
 app.include_router(principals_router)
 app.include_router(tenants_router)
+app.include_router(openai_router)
