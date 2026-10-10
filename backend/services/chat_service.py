@@ -23,7 +23,8 @@ if root_dir not in sys.path:
 
 import requests
 import agentguard
-from backend.config import GUARD_MODEL, TARGET_MODEL
+from backend.config import GUARD_MODEL, TARGET_MODEL, DLP_ENABLED, DLP_REVERSIBLE
+from backend.services.dlp_service import dlp_service, DLPVault
 from backend.schemas import ChatRequest, ChatResponse
 from backend.services.concurrency_service import ConcurrencyLimitExceeded
 from backend.services.metrics_service import metrics
@@ -82,11 +83,15 @@ def execute_chat(request: ChatRequest, request_id: Optional[str] = None) -> Chat
                 latency_ms=elapsed_ms,
             )
 
-        # Step 3: Guard ALLOW -> Invoke Target LLM with validated conversation sequence
-        target_payload = [
-            {"role": msg.role, "content": msg.content}
-            for msg in request.messages
-        ]
+        # Step 3: Guard ALLOW -> Invoke Target LLM with DLP Tokenization
+        dlp_vault = DLPVault()
+        target_payload = []
+        for msg in request.messages:
+            if DLP_ENABLED:
+                masked_msg, dlp_vault = dlp_service.tokenize(msg.content, vault=dlp_vault)
+            else:
+                masked_msg = msg.content
+            target_payload.append({"role": msg.role, "content": masked_msg})
 
         target_start = time.perf_counter()
         try:
@@ -141,6 +146,12 @@ def execute_chat(request: ChatRequest, request_id: Optional[str] = None) -> Chat
             elapsed_ms,
         )
 
+        # Step 4b: Reversible PII Restoration
+        if DLP_ENABLED and DLP_REVERSIBLE and dlp_vault.reverse_map:
+            final_response = dlp_service.de_tokenize(sanitized_response, dlp_vault)
+        else:
+            final_response = sanitized_response
+
         return ChatResponse(
             request_id=request_id,
             conversation_id=conversation_id,
@@ -149,7 +160,7 @@ def execute_chat(request: ChatRequest, request_id: Optional[str] = None) -> Chat
             attack_type="none",
             guard_model=guard_result.guard_model,
             target_model=TARGET_MODEL,
-            response=sanitized_response,
+            response=final_response,
             latency_ms=elapsed_ms,
         )
 

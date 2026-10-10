@@ -796,6 +796,8 @@ class OpenAIGuardMetadata(BaseModel):
     risk_score: float
     attack_type: str
     latency_ms: float
+    dlp_entities_masked: Optional[int] = 0
+    dlp_types: Optional[List[str]] = Field(default_factory=list)
 
 
 class OpenAIChatCompletionResponse(BaseModel):
@@ -825,3 +827,41 @@ class OpenAIModelCard(BaseModel):
 class OpenAIModelListResponse(BaseModel):
     object: str = "list"
     data: List[OpenAIModelCard]
+
+
+# ============================================================
+# DATA LOSS PREVENTION (DLP) & PII TOKENIZATION SCHEMAS
+# ============================================================
+
+class DLPTokenizeRequest(BaseModel):
+    """
+    Payload for standalone PII detection and tokenization.
+    """
+    text: str = Field(..., min_length=1, max_length=MAX_PROMPT_LENGTH, description="Text containing sensitive PII data to anonymize.")
+    categories: Optional[List[str]] = Field(None, description="Optional subset of entity categories to detect (e.g. ['EMAIL', 'CREDIT_CARD']).")
+
+
+class DLPTokenizeResponse(BaseModel):
+    """
+    Response containing anonymized text, detected entity metadata, and token vault.
+    """
+    masked_text: str = Field(..., description="Anonymized text with deterministic placeholders.")
+    entities_detected: List[Dict[str, Any]] = Field(default_factory=list, description="List of detected sensitive entities.")
+    vault: Dict[str, str] = Field(default_factory=dict, description="Reverse mapping of placeholder -> real value.")
+    total_entities: int = Field(0, description="Total count of PII entities masked.")
+
+
+class DLPRestoreRequest(BaseModel):
+    """
+    Payload for reversing anonymized placeholders back to original values.
+    """
+    masked_text: str = Field(..., min_length=1, description="Anonymized text containing [TYPE_N] placeholders.")
+    vault: Dict[str, str] = Field(..., description="Vault mapping placeholders to original values.")
+
+
+class DLPRestoreResponse(BaseModel):
+    """
+    Response containing restored text with original sensitive values.
+    """
+    restored_text: str = Field(..., description="De-anonymized text with original values restored.")
+

@@ -23,7 +23,8 @@ if root_dir not in sys.path:
 
 import requests
 import agentguard
-from backend.config import GUARD_MODEL, TARGET_MODEL, MAX_TOOL_CALLS_PER_REQUEST
+from backend.config import GUARD_MODEL, TARGET_MODEL, MAX_TOOL_CALLS_PER_REQUEST, DLP_ENABLED, DLP_REVERSIBLE
+from backend.services.dlp_service import dlp_service, DLPVault
 from backend.schemas import ExecuteResponse
 from backend.services.concurrency_service import ConcurrencyLimitExceeded
 from backend.services.guard_service import evaluate_prompt
@@ -78,10 +79,16 @@ def execute_prompt(prompt: str, request_id: Optional[str] = None) -> ExecuteResp
                 latency_ms=elapsed_ms,
             )
 
-        # Step 3: Guard ALLOW -> Invoke Target LLM
+        # Step 3: Guard ALLOW -> Invoke Target LLM with DLP Tokenization
+        dlp_vault = DLPVault()
+        if DLP_ENABLED:
+            masked_prompt, dlp_vault = dlp_service.tokenize(prompt, vault=dlp_vault)
+        else:
+            masked_prompt = prompt
+
         target_start = time.perf_counter()
         try:
-            raw_target_response = call_target(prompt)
+            raw_target_response = call_target(masked_prompt)
             target_latency_ms = round((time.perf_counter() - target_start) * 1000.0, 2)
         except ConcurrencyLimitExceeded:
             raise
@@ -190,6 +197,12 @@ def execute_prompt(prompt: str, request_id: Optional[str] = None) -> ExecuteResp
             elapsed_ms,
         )
 
+        # Step 4b: Reversible PII Restoration
+        if DLP_ENABLED and DLP_REVERSIBLE and dlp_vault.reverse_map:
+            final_response = dlp_service.de_tokenize(sanitized_response, dlp_vault)
+        else:
+            final_response = sanitized_response
+
         return ExecuteResponse(
             request_id=request_id,
             decision="ALLOW",
@@ -197,7 +210,7 @@ def execute_prompt(prompt: str, request_id: Optional[str] = None) -> ExecuteResp
             attack_type="none",
             guard_model=guard_result.guard_model,
             target_model=TARGET_MODEL,
-            response=sanitized_response,
+            response=final_response,
             latency_ms=elapsed_ms,
         )
 

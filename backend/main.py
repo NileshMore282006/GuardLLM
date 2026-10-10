@@ -42,6 +42,7 @@ from backend.routes.credentials import router as credentials_router
 from backend.routes.principals import router as principals_router
 from backend.routes.tenants import router as tenants_router
 from backend.routes.openai_proxy import router as openai_router
+from backend.routes.dlp import router as dlp_router
 from backend.schemas import HealthResponse, ReadyResponse
 from backend.services.audit_service import AuditFailureError, audit_service
 from backend.services.authentication_service import authenticate_request
@@ -889,3 +890,4 @@ app.include_router(credentials_router)
 app.include_router(principals_router)
 app.include_router(tenants_router)
 app.include_router(openai_router)
+app.include_router(dlp_router)

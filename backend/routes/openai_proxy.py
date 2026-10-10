@@ -21,7 +21,8 @@ from fastapi import APIRouter, Header, Query, Request, status
 from fastapi.responses import JSONResponse, StreamingResponse
 
 import agentguard
-from backend.config import GUARD_MODEL, OLLAMA_BASE_URL, TARGET_MODEL, VERSION
+from backend.config import DLP_ENABLED, DLP_REVERSIBLE, GUARD_MODEL, OLLAMA_BASE_URL, TARGET_MODEL, VERSION
+from backend.services.dlp_service import dlp_service, DLPVault
 from backend.schemas import (
     ChatMessage,
     OpenAIChatChoice,
@@ -134,9 +135,11 @@ def chat_completions(
     request: Request,
     block_mode: Optional[str] = Query(None, description="Set to 'error' to return HTTP 400 on guard block."),
     x_agentguard_block_mode: Optional[str] = Header(None, alias="X-AgentGuard-Block-Mode"),
+    x_agentguard_dlp: Optional[str] = Header(None, alias="X-AgentGuard-DLP"),
+    x_agentguard_dlp_mask_only: Optional[str] = Header(None, alias="X-AgentGuard-DLP-Mask-Only"),
 ) -> Any:
     """
-    OpenAI-compatible chat completions endpoint guarded by AgentGuard.
+    OpenAI-compatible chat completions endpoint guarded by AgentGuard with reversible DLP.
     """
     start_time = time.perf_counter()
     request_id = getattr(request.state, "request_id", None) or f"chatcmpl-{uuid.uuid4().hex[:12]}"
@@ -267,14 +270,32 @@ def chat_completions(
                 risk_score=risk_score,
                 attack_type=attack_type,
                 latency_ms=elapsed_ms,
+                dlp_entities_masked=0,
+                dlp_types=[],
             ),
         )
 
-    # 4. Target LLM Execution (Guard ALLOW)
-    target_payload = [
-        {"role": m.role.strip().lower(), "content": str(m.content or "")}
-        for m in payload.messages
-    ]
+    # 4. DLP Tokenization & Target LLM Execution (Guard ALLOW)
+    dlp_active = DLP_ENABLED and (x_agentguard_dlp is None or x_agentguard_dlp.lower() != "false")
+    dlp_reversible = DLP_REVERSIBLE and (x_agentguard_dlp_mask_only is None or x_agentguard_dlp_mask_only.lower() != "true")
+
+    dlp_vault = DLPVault()
+    target_payload = []
+    for m in payload.messages:
+        raw_msg_content = str(m.content or "")
+        if dlp_active:
+            masked_msg, dlp_vault = dlp_service.tokenize(raw_msg_content, vault=dlp_vault)
+        else:
+            masked_msg = raw_msg_content
+        target_payload.append({"role": m.role.strip().lower(), "content": masked_msg})
+
+    if dlp_vault.detected_entities:
+        logger.info(
+            "DLP anonymized %d entities in request %s (types: %s)",
+            len(dlp_vault.detected_entities),
+            request_id,
+            list(dict.fromkeys(e["type"] for e in dlp_vault.detected_entities)),
+        )
 
     try:
         raw_target_response = target_service.call_target_chat(target_payload)
@@ -311,6 +332,12 @@ def chat_completions(
     if leak_prevented:
         logger.warning("Canary/secret leak redacted in OpenAI proxy response for %s", request_id)
 
+    # 5b. Reversible PII Restoration (De-anonymization)
+    if dlp_active and dlp_reversible and dlp_vault.reverse_map:
+        final_response = dlp_service.de_tokenize(sanitized_response, dlp_vault)
+    else:
+        final_response = sanitized_response
+
     total_latency_ms = round((time.perf_counter() - start_time) * 1000.0, 2)
     metrics.record_decision("ALLOW")
     audit_service.log_event(
@@ -325,7 +352,7 @@ def chat_completions(
     )
 
     prompt_tokens = _estimate_tokens(canonical_context)
-    completion_tokens = _estimate_tokens(sanitized_response)
+    completion_tokens = _estimate_tokens(final_response)
 
     # 6. Streaming Mode (SSE Server-Sent Events)
     if payload.stream:
@@ -341,7 +368,7 @@ def chat_completions(
             yield f"data: {json.dumps(init_chunk)}\n\n"
 
             # Content chunk (yield response in words/tokens)
-            words = sanitized_response.split(" ")
+            words = final_response.split(" ")
             for i, w in enumerate(words):
                 chunk_str = w if i == 0 else " " + w
                 chunk = {
@@ -383,7 +410,7 @@ def chat_completions(
         choices=[
             OpenAIChatChoice(
                 index=0,
-                message=OpenAIChatChoiceMessage(role="assistant", content=sanitized_response),
+                message=OpenAIChatChoiceMessage(role="assistant", content=final_response),
                 finish_reason="stop",
             )
         ],
@@ -398,5 +425,7 @@ def chat_completions(
             risk_score=risk_score,
             attack_type="none",
             latency_ms=total_latency_ms,
+            dlp_entities_masked=len(dlp_vault.detected_entities),
+            dlp_types=list(dict.fromkeys(e["type"] for e in dlp_vault.detected_entities)),
         ),
     )

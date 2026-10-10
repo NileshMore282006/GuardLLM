@@ -133,3 +133,7 @@ ALLOWED_ORIGINS = [
     for origin in os.environ.get("AGENTGUARD_ALLOWED_ORIGINS", DEFAULT_ALLOWED_ORIGINS).split(",")
     if origin.strip()
 ]
+
+# Reversible Data Loss Prevention (DLP) & PII Tokenizer Configuration
+DLP_ENABLED = os.environ.get("AGENTGUARD_DLP_ENABLED", "true").lower() in ("true", "1", "yes")
+DLP_REVERSIBLE = os.environ.get("AGENTGUARD_DLP_REVERSIBLE", "true").lower() in ("true", "1", "yes")
