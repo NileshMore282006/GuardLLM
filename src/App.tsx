@@ -9,6 +9,7 @@ import {
   ChatTurn,
   TurnSecurityMetadata,
   AppMode,
+  ConversationSummary,
 } from './types/agentguard';
 import { agentGuardApi, AgentGuardApiError } from './api/agentguard';
 import { Header, TopBar } from './components/Header';
@@ -65,12 +66,28 @@ export const AppContent: React.FC<AppProps> = ({ initialMode = 'chat' }) => {
   );
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [turns, setTurns] = useState<ChatTurn[]>([]);
+  const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [chatInput, setChatInput] = useState<string>('');
   const [isChatLoading, setIsChatLoading] = useState<boolean>(false);
   const [chatError, setChatError] = useState<string | null>(null);
   const [chatFlowState, setChatFlowState] = useState<SecurityFlowState>('IDLE');
   const [developerToken, setDeveloperToken] = useState<string>('');
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  const loadConversations = useCallback(async () => {
+    try {
+      const list = await agentGuardApi.listConversations();
+      if (Array.isArray(list)) {
+        setConversations(list);
+      }
+    } catch {
+      // In offline or fallback mode
+    }
+  }, []);
+
+  useEffect(() => {
+    loadConversations();
+  }, [loadConversations]);
 
   const handleDeveloperTokenChange = (token: string) => {
     setDeveloperToken(token);
@@ -212,6 +229,7 @@ export const AppContent: React.FC<AppProps> = ({ initialMode = 'chat' }) => {
         };
         setTurns((prev) => [...prev, newTurn]);
       }
+      loadConversations();
     } catch (err: unknown) {
       setChatFlowState('ERROR');
       if (err instanceof AgentGuardApiError) {
@@ -224,6 +242,42 @@ export const AppContent: React.FC<AppProps> = ({ initialMode = 'chat' }) => {
     } finally {
       setIsChatLoading(false);
       abortControllerRef.current = null;
+    }
+  };
+
+  const handleSelectConversation = async (selectedId: string) => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsChatLoading(true);
+    try {
+      const detail = await agentGuardApi.getConversation(selectedId);
+      if (detail && detail.conversation_id) {
+        setConversationId(detail.conversation_id);
+        setTurns(detail.turns || []);
+        const reconstructed: ChatMessage[] = [];
+        for (const t of detail.turns || []) {
+          reconstructed.push({ role: 'user', content: t.userMessage });
+          if (t.assistantResponse && t.security?.decision === 'ALLOW') {
+            reconstructed.push({ role: 'assistant', content: t.assistantResponse });
+          }
+        }
+        setChatMessages(reconstructed);
+        setChatError(null);
+        setChatFlowState(
+          detail.turns && detail.turns.length > 0
+            ? detail.turns[detail.turns.length - 1].security?.decision === 'ALLOW'
+              ? 'COMPLETED'
+              : 'BLOCKED'
+            : 'IDLE'
+        );
+      }
+    } catch (err) {
+      console.warn('Could not load conversation from SQLite:', err);
+    } finally {
+      setIsChatLoading(false);
+      setMode('chat');
     }
   };
 
@@ -378,6 +432,8 @@ export const AppContent: React.FC<AppProps> = ({ initialMode = 'chat' }) => {
         onNewConversation={handleNewConversation}
         conversationId={conversationId}
         turnsCount={turns.length}
+        conversations={conversations}
+        onSelectConversation={handleSelectConversation}
         onSelectScenarioPrompt={(scenarioPrompt) => {
           setChatInput(scenarioPrompt);
           setMode('chat');

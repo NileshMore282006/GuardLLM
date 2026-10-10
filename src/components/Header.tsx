@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { HealthResponse, AppMode } from '../types/agentguard';
+import { HealthResponse, AppMode, ConversationSummary } from '../types/agentguard';
 import { SystemStatus } from './SystemStatus';
 import {
   Shield,
@@ -30,35 +30,42 @@ interface HeaderProps {
   onNewConversation?: () => void;
   conversationId?: string;
   turnsCount?: number;
+  conversations?: ConversationSummary[];
+  onSelectConversation?: (conversationId: string) => void;
   onSelectScenarioPrompt?: (prompt: string) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  health,
-  isOnline,
-  isLoading,
   mode,
   onModeChange,
   onNewConversation,
   conversationId,
   turnsCount = 0,
+  conversations = [],
+  onSelectConversation,
   onSelectScenarioPrompt,
 }) => {
   const { tokenPresent, maskedToken, isGlobalAdmin, roles, logout } = useSession();
   const [recentOpen, setRecentOpen] = useState(true);
   const [favoritesOpen, setFavoritesOpen] = useState(true);
 
-  const sampleRecentChats = [
-    {
-      id: conversationId || 'conv-active',
-      title: turnsCount > 0 ? `Active Session #${turnsCount}` : 'Active Live Session',
-      active: true,
-      time: isLoading ? 'Checking...' : isOnline ? 'Live' : 'Offline',
-    },
-    { id: 'conv-injection-audit', title: 'Direct Prompt Injection Check', active: false, time: '10m ago' },
-    { id: 'conv-dlp-stream', title: 'Reversible PII / DLP Tokenizer', active: false, time: '1h ago' },
-    { id: 'conv-hitl-queue', title: 'SOC 1-Click HITL Approval Run', active: false, time: '3h ago' },
-  ];
+  const recentChatItems =
+    conversations.length > 0
+      ? conversations.map((conv) => ({
+          id: conv.conversation_id,
+          title: conv.title,
+          active: conv.conversation_id === conversationId,
+        }))
+      : [
+          {
+            id: conversationId || 'conv-active',
+            title: turnsCount > 0 ? `Active Session #${turnsCount}` : 'Active Live Session',
+            active: true,
+          },
+          { id: 'conv-injection-audit', title: 'Direct Prompt Injection Check', active: false },
+          { id: 'conv-dlp-stream', title: 'Reversible PII / DLP Tokenizer', active: false },
+          { id: 'conv-hitl-queue', title: 'SOC 1-Click HITL Approval Run', active: false },
+        ];
 
   const quickFavorites = [
     { label: 'Benign Greeting', prompt: 'Hello! Can you explain the difference between direct and indirect prompt injection?' },
@@ -76,12 +83,7 @@ export const Header: React.FC<HeaderProps> = ({
             <Shield size={22} />
           </div>
           <div className="brand-titles">
-            <h1>
-              AGENTGUARD
-              <span className="brand-version-pill">
-                v{health?.version || '1.0.0'} RC
-              </span>
-            </h1>
+            <h1>AGENTGUARD</h1>
             <p className="brand-subtitle">AI Security Gateway & Guard Perimeter</p>
           </div>
         </div>
@@ -111,7 +113,6 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <MessageSquare size={17} />
             <span>Multi-Turn Chat</span>
-            <span className="nav-tag">v0.2</span>
           </button>
 
           <button
@@ -124,7 +125,6 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <Activity size={17} />
             <span>Security Operations</span>
-            <span className="nav-tag">v0.6</span>
           </button>
 
           <button
@@ -136,7 +136,6 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <LayoutDashboard size={17} />
             <span>Security Dashboard</span>
-            <span className="nav-tag">v0.4</span>
           </button>
 
           <button
@@ -148,7 +147,6 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <Wrench size={17} />
             <span>Agent Security</span>
-            <span className="nav-tag">v0.3</span>
           </button>
 
           <button
@@ -160,7 +158,6 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <Sliders size={17} />
             <span>Administration</span>
-            <span className="nav-tag">v0.5</span>
           </button>
 
           <button
@@ -172,7 +169,6 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <Terminal size={17} />
             <span>Security Playground</span>
-            <span className="nav-tag">v0.1</span>
           </button>
         </nav>
 
@@ -190,16 +186,24 @@ export const Header: React.FC<HeaderProps> = ({
 
           {recentOpen && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-              {sampleRecentChats.map((chat) => (
+              {recentChatItems.map((chat) => (
                 <button
                   key={chat.id}
                   type="button"
                   className={`sidebar-list-item ${chat.active && mode === 'chat' ? 'active' : ''}`}
-                  onClick={() => onModeChange('chat')}
+                  onClick={() => {
+                    if (onSelectConversation) {
+                      onSelectConversation(chat.id);
+                    } else {
+                      onModeChange('chat');
+                    }
+                  }}
                   title={chat.title}
                 >
                   <MessageSquare size={13} style={{ flexShrink: 0, opacity: 0.7 }} />
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{chat.title}</span>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {chat.title}
+                  </span>
                 </button>
               ))}
             </div>

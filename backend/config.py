@@ -93,6 +93,7 @@ GLOBAL_ADMIN_ENABLED = os.environ.get("AGENTGUARD_GLOBAL_ADMIN_ENABLED", _admin_
 
 # Persistent Security Audit Log & Cryptographic Integrity (v0.9)
 AUDIT_DB_PATH = os.environ.get("AGENTGUARD_AUDIT_DB_PATH", os.path.join("data", "agentguard_audit.db"))
+CHAT_DB_PATH = os.environ.get("AGENTGUARD_CHAT_DB_PATH", os.path.join("data", "agentguard_chat.db"))
 AUDIT_ENABLED = os.environ.get("AGENTGUARD_AUDIT_ENABLED", "true").lower() in ("true", "1", "yes")
 AUDIT_CHAIN_ENABLED = os.environ.get("AGENTGUARD_AUDIT_CHAIN_ENABLED", "true").lower() in ("true", "1", "yes")
 AUDIT_RETENTION_LIMIT = int(os.environ.get("AGENTGUARD_AUDIT_RETENTION_LIMIT", "100000"))

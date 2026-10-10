@@ -41,6 +41,8 @@ import {
   PolicyListResponse,
   PolicyDeleteResponse,
   AuditVerifyResponse,
+  ConversationSummary,
+  ConversationDetail,
 } from '../types/agentguard';
 
 export const API_BASE_URL =
@@ -223,6 +225,30 @@ export const agentGuardApi = {
       signal,
       headers,
     });
+  },
+
+  /**
+   * Retrieves list of persistent conversations stored in SQLite.
+   */
+  async listConversations(limit: number = 50): Promise<ConversationSummary[]> {
+    return requestJson<ConversationSummary[]>(`/api/v1/chat/conversations?limit=${limit}`);
+  },
+
+  /**
+   * Retrieves a specific conversation with all turns from SQLite.
+   */
+  async getConversation(conversationId: string): Promise<ConversationDetail> {
+    return requestJson<ConversationDetail>(`/api/v1/chat/conversations/${encodeURIComponent(conversationId)}`);
+  },
+
+  /**
+   * Deletes a conversation and its turns from SQLite.
+   */
+  async deleteConversation(conversationId: string): Promise<{ success: boolean; conversation_id: string }> {
+    return requestJson<{ success: boolean; conversation_id: string }>(
+      `/api/v1/chat/conversations/${encodeURIComponent(conversationId)}`,
+      { method: 'DELETE' }
+    );
   },
 
   /* =========================================================================

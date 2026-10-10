@@ -88,6 +88,18 @@ export interface ChatTurn {
   isCancelled?: boolean;
 }
 
+export interface ConversationSummary {
+  conversation_id: string;
+  title: string;
+  created_at: number;
+  updated_at: number;
+  turn_count: number;
+}
+
+export interface ConversationDetail extends ConversationSummary {
+  turns: ChatTurn[];
+}
+
 export type AppMode = 'secops' | 'admin' | 'dashboard' | 'agent-security' | 'chat' | 'playground';
 
 export interface BackendErrorPayload {

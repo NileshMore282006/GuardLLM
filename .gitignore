@@ -4,3 +4,7 @@ __pycache__/
 venv/
 .venv/
 node_modules/.vite/
+data/*.db
+data/*.db-wal
+data/*.db-shm
+
