@@ -11,7 +11,7 @@ import {
   AppMode,
 } from './types/agentguard';
 import { agentGuardApi, AgentGuardApiError } from './api/agentguard';
-import { Header } from './components/Header';
+import { Header, TopBar } from './components/Header';
 import { ChatWindow } from './components/ChatWindow';
 import { SecurityPanel } from './components/SecurityPanel';
 import { SecurityFlow } from './components/SecurityFlow';
@@ -354,153 +354,169 @@ export const AppContent: React.FC<AppProps> = ({ initialMode = 'chat' }) => {
   const latestTurn = turns.length > 0 ? turns[turns.length - 1] : null;
 
   return (
-    <div>
+    <div className="axia-dashboard-layout">
       <Header
         health={health}
         isOnline={isOnline}
         isLoading={isHealthLoading}
         mode={mode}
         onModeChange={setMode}
+        onNewConversation={handleNewConversation}
+        conversationId={conversationId}
+        turnsCount={turns.length}
+        onSelectScenarioPrompt={(scenarioPrompt) => {
+          setChatInput(scenarioPrompt);
+          setMode('chat');
+        }}
       />
 
-      <DegradedModeBanner
-        isOnline={isOnline}
-        onRetry={checkHealth}
-        isRetrying={isHealthLoading}
-      />
+      <div className="axia-main-viewport">
+        <TopBar
+          health={health}
+          isOnline={isOnline}
+          isLoading={isHealthLoading}
+          mode={mode}
+        />
 
-      <main className="app-container">
-        {mode === 'secops' ? (
-          /* =========================================================================
-             Security Operations & Incident Response (v0.6)
-             ========================================================================= */
-          <SecurityOperationsView
-            health={health}
-            developerToken={developerToken}
-            setDeveloperToken={handleDeveloperTokenChange}
-          />
-        ) : mode === 'admin' ? (
-          /* =========================================================================
-             Administration & Audit Control Plane (v0.5)
-             ========================================================================= */
-          <AdministrationView
-            health={health}
-            developerToken={developerToken}
-            setDeveloperToken={handleDeveloperTokenChange}
-          />
-        ) : mode === 'dashboard' ? (
-          /* =========================================================================
-             Security Dashboard & Observability (v0.4)
-             ========================================================================= */
-          <SecurityDashboard
-            health={health}
-            isOnline={isOnline}
-            developerToken={developerToken}
-            sessionHistory={history}
-            sessionChatTurns={turns}
-          />
-        ) : mode === 'agent-security' ? (
-          /* =========================================================================
-             Agent Security: Tool Calls, Risk & Human Approval (v0.3)
-             ========================================================================= */
-          <AgentSecurityView
-            developerToken={developerToken}
-            setDeveloperToken={handleDeveloperTokenChange}
-          />
-        ) : mode === 'chat' ? (
-          /* =========================================================================
-             Multi-Turn Security Chat View (v0.2)
-             ========================================================================= */
-          <div className="chat-layout-grid">
-            <ChatWindow
-              conversationId={conversationId}
-              turns={turns}
-              isLoading={isChatLoading}
-              onSendMessage={handleSendChatMessage}
-              onNewConversation={handleNewConversation}
-              onCancelRequest={handleCancelChatRequest}
-              input={chatInput}
-              setInput={setChatInput}
-              errorMessage={chatError}
-            />
+        <DegradedModeBanner
+          isOnline={isOnline}
+          onRetry={checkHealth}
+          isRetrying={isHealthLoading}
+        />
 
-            <SecurityPanel
-              latestTurn={latestTurn}
-              turns={turns}
-              flowState={chatFlowState}
+        <main className="app-container">
+          {mode === 'secops' ? (
+            /* =========================================================================
+               Security Operations & Incident Response (v0.6)
+               ========================================================================= */
+            <SecurityOperationsView
+              health={health}
               developerToken={developerToken}
               setDeveloperToken={handleDeveloperTokenChange}
             />
-          </div>
-        ) : (
-          /* =========================================================================
-             Single-Prompt Security Playground View (v0.1)
-             ========================================================================= */
-          <>
-            <SecurityFlow flowState={playgroundFlowState} />
+          ) : mode === 'admin' ? (
+            /* =========================================================================
+               Administration & Audit Control Plane (v0.5)
+               ========================================================================= */
+            <AdministrationView
+              health={health}
+              developerToken={developerToken}
+              setDeveloperToken={handleDeveloperTokenChange}
+            />
+          ) : mode === 'dashboard' ? (
+            /* =========================================================================
+               Security Dashboard & Observability (v0.4)
+               ========================================================================= */
+            <SecurityDashboard
+              health={health}
+              isOnline={isOnline}
+              developerToken={developerToken}
+              sessionHistory={history}
+              sessionChatTurns={turns}
+            />
+          ) : mode === 'agent-security' ? (
+            /* =========================================================================
+               Agent Security: Tool Calls, Risk & Human Approval (v0.3)
+               ========================================================================= */
+            <AgentSecurityView
+              developerToken={developerToken}
+              setDeveloperToken={handleDeveloperTokenChange}
+            />
+          ) : mode === 'chat' ? (
+            /* =========================================================================
+               Multi-Turn Security Chat View (v0.2)
+               ========================================================================= */
+            <div className="chat-layout-grid">
+              <ChatWindow
+                conversationId={conversationId}
+                turns={turns}
+                isLoading={isChatLoading}
+                onSendMessage={handleSendChatMessage}
+                onNewConversation={handleNewConversation}
+                onCancelRequest={handleCancelChatRequest}
+                input={chatInput}
+                setInput={setChatInput}
+                errorMessage={chatError}
+              />
 
-            {playgroundError && (
-              <div className="alert-box danger" role="alert">
-                <AlertCircle size={20} style={{ flexShrink: 0 }} />
-                <div>
-                  <div style={{ fontWeight: 600 }}>Security Gateway Notice</div>
-                  <div style={{ fontSize: '0.8125rem' }}>{playgroundError}</div>
+              <SecurityPanel
+                latestTurn={latestTurn}
+                turns={turns}
+                flowState={chatFlowState}
+                developerToken={developerToken}
+                setDeveloperToken={handleDeveloperTokenChange}
+              />
+            </div>
+          ) : (
+            /* =========================================================================
+               Single-Prompt Security Playground View (v0.1)
+               ========================================================================= */
+            <>
+              <SecurityFlow flowState={playgroundFlowState} />
+
+              {playgroundError && (
+                <div className="alert-box danger" role="alert">
+                  <AlertCircle size={20} style={{ flexShrink: 0 }} />
+                  <div>
+                    <div style={{ fontWeight: 600 }}>Security Gateway Notice</div>
+                    <div style={{ fontSize: '0.8125rem' }}>{playgroundError}</div>
+                  </div>
+                </div>
+              )}
+
+              <div className="playground-grid">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  <PromptInput
+                    prompt={prompt}
+                    setPrompt={setPrompt}
+                    onAnalyze={handleAnalyzePrompt}
+                    isLoading={isPlaygroundLoading}
+                    isExecuting={isPlaygroundExecuting}
+                  />
+
+                  {executionResult && <ExecutionResult execution={executionResult} />}
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  {guardResult ? (
+                    <SecurityDecision
+                      guardResult={guardResult}
+                      onExecute={handleExecutePrompt}
+                      isExecuting={isPlaygroundExecuting}
+                      hasExecuted={executionResult !== null}
+                    />
+                  ) : (
+                    <div
+                      className="glass-panel"
+                      style={{
+                        padding: '2rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        textAlign: 'center',
+                        color: 'var(--text-muted)',
+                        minHeight: '260px',
+                      }}
+                    >
+                      <p style={{ fontSize: '0.8125rem', maxWidth: '300px' }}>
+                        Enter or select a prompt and click "Analyze Prompt" to evaluate its
+                        security through the AgentGuard perimeter.
+                      </p>
+                    </div>
+                  )}
+
+                  <RequestHistory
+                    history={history}
+                    onSelect={handleSelectHistory}
+                    onClear={handleClearHistory}
+                  />
                 </div>
               </div>
-            )}
-
-            <div className="playground-grid">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                <PromptInput
-                  prompt={prompt}
-                  setPrompt={setPrompt}
-                  onAnalyze={handleAnalyzePrompt}
-                  isLoading={isPlaygroundLoading}
-                  isExecuting={isPlaygroundExecuting}
-                />
-
-                {executionResult && <ExecutionResult execution={executionResult} />}
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                {guardResult ? (
-                  <SecurityDecision
-                    guardResult={guardResult}
-                    onExecute={handleExecutePrompt}
-                    isExecuting={isPlaygroundExecuting}
-                    hasExecuted={executionResult !== null}
-                  />
-                ) : (
-                  <div
-                    className="glass-panel"
-                    style={{
-                      padding: '2rem',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      textAlign: 'center',
-                      color: 'var(--text-muted)',
-                      minHeight: '260px',
-                    }}
-                  >
-                    <p style={{ fontSize: '0.8125rem', maxWidth: '300px' }}>
-                      Enter or select a prompt and click "Analyze Prompt" to evaluate its
-                      security through the AgentGuard perimeter.
-                    </p>
-                  </div>
-                )}
-
-                <RequestHistory
-                  history={history}
-                  onSelect={handleSelectHistory}
-                  onClear={handleClearHistory}
-                />
-              </div>
-            </div>
-          </>
-        )}
-      </main>
+            </>
+          )}
+        </main>
+      </div>
     </div>
   );
 };
