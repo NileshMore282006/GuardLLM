@@ -35,6 +35,20 @@ export const AppContent: React.FC<AppProps> = ({ initialMode = 'chat' }) => {
   // Application Mode (v0.2 Chat vs v0.1 Security Playground)
   const [mode, setMode] = useState<AppMode>(initialMode);
 
+  // Theme State ('light' vs 'dark')
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
+  const handleToggleTheme = () => {
+    setTheme((prev) => {
+      const nextTheme = prev === 'light' ? 'dark' : 'light';
+      if (typeof document !== 'undefined') {
+        document.documentElement.setAttribute('data-theme', nextTheme);
+        document.body.setAttribute('data-theme', nextTheme);
+      }
+      return nextTheme;
+    });
+  };
+
   // System Health
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [isOnline, setIsOnline] = useState<boolean>(false);
@@ -376,6 +390,8 @@ export const AppContent: React.FC<AppProps> = ({ initialMode = 'chat' }) => {
           isOnline={isOnline}
           isLoading={isHealthLoading}
           mode={mode}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
         />
 
         <DegradedModeBanner

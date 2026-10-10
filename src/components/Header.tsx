@@ -16,6 +16,8 @@ import {
   Bell,
   Layers,
   LogOut,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { useSession } from '../context/SessionContext';
 
@@ -49,7 +51,7 @@ export const Header: React.FC<HeaderProps> = ({
   const sampleRecentChats = [
     {
       id: conversationId || 'conv-active',
-      title: turnsCount > 0 ? `Active Session (${turnsCount} turns)` : 'Active Live Session',
+      title: turnsCount > 0 ? `Active Session #${turnsCount}` : 'Active Live Session',
       active: true,
       time: isLoading ? 'Checking...' : isOnline ? 'Live' : 'Offline',
     },
@@ -323,6 +325,8 @@ interface TopBarProps {
   isOnline: boolean;
   isLoading: boolean;
   mode: AppMode;
+  theme?: 'light' | 'dark';
+  onToggleTheme?: () => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -330,6 +334,8 @@ export const TopBar: React.FC<TopBarProps> = ({
   isOnline,
   isLoading,
   mode,
+  theme = 'light',
+  onToggleTheme,
 }) => {
   const modeLabels: Record<AppMode, string> = {
     chat: 'AI Chat Assistant',
@@ -359,6 +365,28 @@ export const TopBar: React.FC<TopBarProps> = ({
 
         {/* System Protected / Offline Pill */}
         <SystemStatus health={health} isOnline={isOnline} isLoading={isLoading} />
+
+        {/* Theme Toggle Button */}
+        <button
+          type="button"
+          className="model-selector-chip theme-toggle-btn"
+          onClick={onToggleTheme}
+          title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          data-testid="theme-toggle-btn"
+        >
+          {theme === 'dark' ? (
+            <>
+              <Sun size={14} style={{ color: '#f59e0b' }} />
+              <span className="theme-toggle-label">Light</span>
+            </>
+          ) : (
+            <>
+              <Moon size={14} style={{ color: '#6366f1' }} />
+              <span className="theme-toggle-label">Dark</span>
+            </>
+          )}
+        </button>
 
         {/* Action icons */}
         <button
